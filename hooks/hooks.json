@@ -1,0 +1,16 @@
+{
+  "description": "Bias every Claude Code session toward the user's trained voice profile via SessionStart additionalContext",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks-handlers/session-start.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
