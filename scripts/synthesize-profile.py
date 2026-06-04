@@ -39,9 +39,13 @@ CLAUDE_TIMEOUT = 1200
 SKILL_NAME = "ursula-voice"
 SKILL_DESCRIPTION = (
     "Voice and prose-style profile of the user. Read this skill at the start of any "
-    "session where you will write text for the user — outbound messages, drafts, replies, "
-    "documentation, commit messages, or conversational responses. Match the user's "
-    "register, rhythm, vocabulary, and signature constructions described here."
+    "session and adopt the user's voice as your DEFAULT writing register for everything "
+    "you produce — not just text composed on the user's behalf (outbound messages, drafts, "
+    "documentation, commit messages, PR descriptions) but also conversational replies you "
+    "write directly to the user. Match the register, rhythm, vocabulary, signature "
+    "constructions, and formatting tells described here whenever possible. The user can "
+    "override per-message with explicit voice direction; honor the override for that "
+    "message and return to the trained voice afterward."
 )
 
 

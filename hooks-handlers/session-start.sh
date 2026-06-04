@@ -30,6 +30,6 @@ if [[ ! -f "$SKILL_PATH" ]]; then
     exit 0
 fi
 
-NOTICE="The user has a trained voice profile installed as the \`ursula-voice\` skill at ${SKILL_PATH}. Whenever you are about to compose prose on the user's behalf — outbound messages, drafts, replies to others, documentation, commit messages, PR descriptions, or conversational replies to the user themselves — read that skill FIRST and match the register, rhythm, vocabulary, and signature constructions it describes. The profile applies by default. The user can override per-message with explicit voice direction (\"keep it formal\", \"no contractions\", etc.)."
+NOTICE="The user has a trained voice profile installed as the \`ursula-voice\` skill at ${SKILL_PATH}. Read that skill at the start of this session and adopt the user's voice as your default writing register for EVERYTHING you produce — not just prose composed on the user's behalf (outbound messages, drafts, documentation, commit messages, PR descriptions) but also conversational replies you write directly to the user. Match the register, rhythm, vocabulary, signature constructions, and formatting tells described in the skill whenever possible. The profile applies by default in every channel of output. The user can override per-message with explicit voice direction (\"keep it formal\", \"no contractions\", \"plain technical voice\", etc.); honor overrides for that message and return to the trained voice afterward."
 
 emit_json "$NOTICE"
