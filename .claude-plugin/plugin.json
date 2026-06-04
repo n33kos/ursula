@@ -1,6 +1,6 @@
 {
   "name": "ursula",
-  "description": "Train a voice/style profile from your writing across Slack, Google Drive, and other services. Synthesizes a 'sound like you' skill that biases every Claude session to match your tone, prose, and terminology.",
-  "version": "0.0.1",
+  "description": "Train a voice/style profile from your writing across Slack (and, later, other connected services). Synthesizes a 'sound like you' skill that biases every Claude session to match your tone, prose rhythm, vocabulary, and signature constructions.",
+  "version": "0.1.0",
   "author": { "name": "Nicholas Suski" }
 }
