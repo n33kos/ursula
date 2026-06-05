@@ -90,7 +90,7 @@ If the user has DMs and group DMs that aren't searchable via the public search, 
 Run the collector script to dedupe, strip Slack-flavored markup, drop voiceless messages (link-only, mention-only, automod), and produce a clean samples file:
 
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/collect-slack.py" \
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/collect-slack.py" \
     --raw-dir ~/.ursula/samples/slack/raw \
     --output ~/.ursula/samples/slack/messages.json
 ```
@@ -100,7 +100,7 @@ Confirm the output reports a reasonable sample count (≥ 30 ideally). If it's f
 ## Step 4: Synthesize
 
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/synthesize-profile.py" \
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/synthesize-profile.py" \
     ~/.ursula/samples/slack/messages.json \
     --model <MODEL>
 ```
@@ -112,7 +112,7 @@ This writes the synthesized profile to `~/.ursula/profile/SKILL.md` (already wra
 Persist the user's Question-4 answer so the SessionStart hook can read it:
 
 ```bash
-bash "$CLAUDE_PLUGIN_ROOT/scripts/set-scope.sh" <all|compose>
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/set-scope.sh" <all|compose>
 ```
 
 Use whichever scope the user chose (or `all` if they accepted the default). If the user never explicitly answered Question 4, default to `all` and tell them so they aren't surprised.
@@ -120,7 +120,7 @@ Use whichever scope the user chose (or `all` if they accepted the default). If t
 ## Step 6: Install
 
 ```bash
-bash "$CLAUDE_PLUGIN_ROOT/scripts/install-profile.sh"
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/install-profile.sh"
 ```
 
 This copies the profile to `~/.claude/skills/ursula-voice/SKILL.md` so Claude Code auto-discovers it as a user-level skill. The SessionStart hook will pick it up on the next session start.
@@ -131,7 +131,7 @@ This copies the profile to `~/.claude/skills/ursula-voice/SKILL.md` so Claude Co
 2. Report the corpus stats: source(s), sample count, time window, total characters.
 3. Note any sections the synthesizer flagged as `[low confidence]` due to thin signal.
 4. Confirm the saved scope (`all` or `compose`) and remind the user they can change it later with `/ursula:scope`.
-5. Remind the user the profile auto-loads in new sessions via the SessionStart hook. To regenerate, run `/ursula:train` again. To uninstall, run `bash $CLAUDE_PLUGIN_ROOT/scripts/install-profile.sh --remove`.
+5. Remind the user the profile auto-loads in new sessions via the SessionStart hook. To regenerate, run `/ursula:train` again. To uninstall, run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/install-profile.sh --remove`.
 
 ## Failure modes
 

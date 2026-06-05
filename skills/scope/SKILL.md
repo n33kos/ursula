@@ -19,9 +19,9 @@ The setting lives at `~/.ursula/config.json` and is read fresh by the `SessionSt
 If the user says something concrete — "set ursula to compose", "turn ursula off for normal chat", "only sound like me when I'm sending stuff" — set the scope directly:
 
 ```bash
-bash "$CLAUDE_PLUGIN_ROOT/scripts/set-scope.sh" compose
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/set-scope.sh" compose
 # or
-bash "$CLAUDE_PLUGIN_ROOT/scripts/set-scope.sh" all
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/set-scope.sh" all
 ```
 
 ### Toggle
@@ -29,7 +29,7 @@ bash "$CLAUDE_PLUGIN_ROOT/scripts/set-scope.sh" all
 If the user says "toggle ursula" or "flip the ursula setting":
 
 ```bash
-bash "$CLAUDE_PLUGIN_ROOT/scripts/set-scope.sh" --toggle
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/set-scope.sh" --toggle
 ```
 
 ### Show current
@@ -37,7 +37,7 @@ bash "$CLAUDE_PLUGIN_ROOT/scripts/set-scope.sh" --toggle
 If the user just wants to know the current scope:
 
 ```bash
-bash "$CLAUDE_PLUGIN_ROOT/scripts/set-scope.sh" --show
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/set-scope.sh" --show
 ```
 
 ### Ambiguous request
@@ -50,4 +50,4 @@ After any change, tell the user:
 
 1. The new scope value.
 2. That the change applies to the **next** session start (the hook only reads the config at session boot — the current session's already-loaded instructions stay as-is until restart).
-3. How to flip back if they change their mind (e.g., "run `/ursula:scope` again or `bash $CLAUDE_PLUGIN_ROOT/scripts/set-scope.sh --toggle`").
+3. How to flip back if they change their mind (e.g., "run `/ursula:scope` again or `bash ${CLAUDE_PLUGIN_ROOT}/scripts/set-scope.sh --toggle`").

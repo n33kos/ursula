@@ -42,7 +42,7 @@ You can choose when the voice profile applies:
 Change scope any time with `/ursula:scope` or directly:
 
 ```
-bash $CLAUDE_PLUGIN_ROOT/scripts/set-scope.sh [all|compose|--toggle|--show]
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/set-scope.sh [all|compose|--toggle|--show]
 ```
 
 The setting lives at `~/.ursula/config.json` and is read fresh by the `SessionStart` hook on each session, so changes take effect on the next session start.
@@ -81,7 +81,7 @@ All of these live outside the plugin install dir so they survive plugin updates.
 ### Uninstalling the profile
 
 ```
-bash $CLAUDE_PLUGIN_ROOT/scripts/install-profile.sh --remove
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/install-profile.sh --remove
 ```
 
 ## Roadmap
