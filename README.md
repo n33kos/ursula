@@ -6,7 +6,7 @@ Sibling project to [imprint](https://github.com/n33kos/imprint), which captures 
 
 ## Status
 
-Walking skeleton (v0.1.0). One source wired up — Slack. Google Drive, email, Notion, etc. land in future versions.
+Walking skeleton (v0.2.0). One source wired up — Slack. Google Drive, email, Notion, etc. land in future versions.
 
 ## Installation
 
@@ -24,12 +24,28 @@ Walking skeleton (v0.1.0). One source wired up — Slack. Google Drive, email, N
 
 The skill will:
 
-1. Ask a few configuration questions (time window, synthesis model, sample cap).
+1. Ask a few configuration questions (time window, synthesis model, sample cap, scope).
 2. Resolve your Slack user via the Slack MCP and page through search results for messages you've authored in the chosen window.
 3. Save the raw responses to `~/.ursula/samples/slack/raw/`.
 4. Normalize them into a clean samples file at `~/.ursula/samples/slack/messages.json`.
 5. Run a multi-pass forensic-linguistics synthesis via `claude --print` to produce a structured voice profile at `~/.ursula/profile/SKILL.md`.
-6. Install the profile as a user-level skill at `~/.claude/skills/ursula-voice/SKILL.md`.
+6. Persist the chosen scope to `~/.ursula/config.json`.
+7. Install the profile as a user-level skill at `~/.claude/skills/ursula-voice/SKILL.md`.
+
+### Scope
+
+You can choose when the voice profile applies:
+
+- **`all`** *(default)* — Claude adopts your voice for everything it writes, including conversational replies back to you inside Claude Code sessions.
+- **`compose`** — Claude only adopts your voice when ghost-writing on your behalf (Slack drafts, emails, docs, commits, PR descriptions, etc.). Direct conversational replies use a neutral register unless you explicitly opt in per message ("reply as me", "in my voice").
+
+Change scope any time with `/ursula:scope` or directly:
+
+```
+bash $CLAUDE_PLUGIN_ROOT/scripts/set-scope.sh [all|compose|--toggle|--show]
+```
+
+The setting lives at `~/.ursula/config.json` and is read fresh by the `SessionStart` hook on each session, so changes take effect on the next session start.
 
 ### How the profile gets loaded
 
@@ -58,6 +74,7 @@ The synthesized profile covers, with linguistics terminology where it adds preci
 - Normalized samples: `~/.ursula/samples/<source>/messages.json`
 - Synthesized profile: `~/.ursula/profile/SKILL.md`
 - Installed skill: `~/.claude/skills/ursula-voice/SKILL.md`
+- Scope config: `~/.ursula/config.json`
 
 All of these live outside the plugin install dir so they survive plugin updates. You can hand-edit the installed skill to correct or refine the profile.
 

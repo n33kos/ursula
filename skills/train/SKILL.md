@@ -45,6 +45,15 @@ Map to `--model {opus|sonnet|haiku}`.
 
 Use the chosen page cap as the hard stop in step 2. Pages are 20 messages each. **Architectural note for transparency:** each page response flows through this session's context window before being archived to disk via `Write`, so cost scales linearly with page count. There's no token-free way to pull hundreds of pages under the current MCP-driven design — that's a known limitation, not a bug. A future iteration may add a Slack-Web-API-based collector that bypasses the context window entirely.
 
+### Question 4: Scope (when should the voice apply?)
+
+> **When should the trained voice profile apply?**
+>
+> 1. **All output (`all`)** *(recommended)* — Claude adopts your voice for everything it writes, including conversational replies back to you inside Claude Code sessions.
+> 2. **Composed prose only (`compose`)** — Claude only adopts your voice when ghost-writing on your behalf (Slack drafts, emails, docs, commit messages, PR descriptions, etc.). Direct conversational replies use a neutral register unless you explicitly opt in per message.
+
+This setting is saved to `~/.ursula/config.json` and read by the `SessionStart` hook on every new session, so it can be changed later with `/ursula:scope`.
+
 ---
 
 Once the user has answered (or accepted defaults), confirm the choices and proceed.
@@ -98,7 +107,17 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/synthesize-profile.py" \
 
 This writes the synthesized profile to `~/.ursula/profile/SKILL.md` (already wrapped in skill frontmatter).
 
-## Step 5: Install
+## Step 5: Save scope config
+
+Persist the user's Question-4 answer so the SessionStart hook can read it:
+
+```bash
+bash "$CLAUDE_PLUGIN_ROOT/scripts/set-scope.sh" <all|compose>
+```
+
+Use whichever scope the user chose (or `all` if they accepted the default). If the user never explicitly answered Question 4, default to `all` and tell them so they aren't surprised.
+
+## Step 6: Install
 
 ```bash
 bash "$CLAUDE_PLUGIN_ROOT/scripts/install-profile.sh"
@@ -106,12 +125,13 @@ bash "$CLAUDE_PLUGIN_ROOT/scripts/install-profile.sh"
 
 This copies the profile to `~/.claude/skills/ursula-voice/SKILL.md` so Claude Code auto-discovers it as a user-level skill. The SessionStart hook will pick it up on the next session start.
 
-## Step 6: Report
+## Step 7: Report
 
 1. Read `~/.claude/skills/ursula-voice/SKILL.md` and present a short summary to the user — top observations from each section (register, rhythm, signature constructions, formatting habits). Quote two or three of the most distinctive imitation-quick-reference rules verbatim.
 2. Report the corpus stats: source(s), sample count, time window, total characters.
 3. Note any sections the synthesizer flagged as `[low confidence]` due to thin signal.
-4. Remind the user the profile auto-loads in new sessions via the SessionStart hook. To regenerate, run `/ursula:train` again. To uninstall, run `bash $CLAUDE_PLUGIN_ROOT/scripts/install-profile.sh --remove`.
+4. Confirm the saved scope (`all` or `compose`) and remind the user they can change it later with `/ursula:scope`.
+5. Remind the user the profile auto-loads in new sessions via the SessionStart hook. To regenerate, run `/ursula:train` again. To uninstall, run `bash $CLAUDE_PLUGIN_ROOT/scripts/install-profile.sh --remove`.
 
 ## Failure modes
 
