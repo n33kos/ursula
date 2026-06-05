@@ -82,22 +82,87 @@ def is_voiceful(text: str) -> bool:
     return True
 
 
+# The Slack MCP's slack_search_public_and_private tool wraps its results in a
+# markdown-formatted text blob under a top-level "results" string field rather
+# than returning structured message objects. We detect that shape and parse it
+# with the regex pair below before falling back to the generic tree walk.
+SLACK_MD_RESULT_BLOCK_RE = re.compile(
+    r"### Result \d+ of \d+\n(?P<body>.*?)(?=\n### Result \d+ of \d+|\n*$)",
+    re.DOTALL,
+)
+SLACK_MD_FIELD_RE = re.compile(r"^(?P<key>[A-Za-z_ ]+):\s*(?P<value>.*?)$", re.MULTILINE)
+
+
+def _parse_slack_md_block(block: str) -> dict | None:
+    """Parse a single '### Result N of M' block from the Slack MCP markdown response."""
+    # Pull simple Key: value fields first
+    fields = {}
+    for m in SLACK_MD_FIELD_RE.finditer(block):
+        key = m.group("key").strip().lower()
+        if key == "text":
+            # Stop — Text:'s value is multi-line and lives below
+            break
+        fields[key] = m.group("value").strip()
+
+    # Text section is everything after the literal "Text:" up to the trailing "---"
+    text_match = re.search(r"\nText:\s*\n(.*?)(?:\n---\s*$|\Z)", block, re.DOTALL)
+    if not text_match:
+        return None
+    text = text_match.group(1).strip()
+    if not text:
+        return None
+
+    channel_field = fields.get("channel", "")
+    # "#channel-name (ID: C123)" or "DM (ID: D123)"
+    channel = None
+    cm = re.match(r"(#\S+|DM)\b", channel_field)
+    if cm:
+        channel = cm.group(1)
+
+    permalink = None
+    pm = re.search(r"Permalink:\s*\[link\]\((https?://[^)]+)\)", block)
+    if pm:
+        permalink = pm.group(1)
+
+    return {
+        "text": text,
+        "channel": channel,
+        "ts": fields.get("message_ts"),
+        "permalink": permalink,
+    }
+
+
 def extract_messages_from_payload(payload, source_label: str) -> list[dict]:
     """
     Walk a raw MCP search response and yield message dicts.
 
-    Slack search responses come in a few shapes depending on which MCP tool was
-    used. We handle the common ones:
-      - {"messages": {"matches": [...]}}
-      - {"messages": [...]}
-      - {"matches": [...]}
-      - a top-level list of message dicts
-      - a wrapper {"results": [...]} or {"items": [...]}
-    Each match is expected to expose at minimum a `text` field; we also try to
-    capture `channel`, `ts`, `permalink`, and `user` when present.
+    Slack search responses come in several shapes:
+      - The Slack MCP wraps its messages in a markdown text blob under the
+        "results" key with "### Result N of M" delimiters. We parse that shape
+        explicitly.
+      - Other tools or future versions may return structured JSON; the generic
+        tree-walk below handles {"messages": [...]}, {"matches": [...]},
+        top-level lists, etc.
     """
     out = []
 
+    # Slack MCP markdown-blob shape — detect and parse explicitly
+    md_blob = None
+    if isinstance(payload, str) and "### Result " in payload:
+        md_blob = payload
+    elif isinstance(payload, dict):
+        results = payload.get("results")
+        if isinstance(results, str) and "### Result " in results:
+            md_blob = results
+    if md_blob is not None:
+        for m in SLACK_MD_RESULT_BLOCK_RE.finditer(md_blob):
+            parsed = _parse_slack_md_block(m.group("body"))
+            if parsed:
+                parsed["source"] = source_label
+                out.append(parsed)
+        return out
+
+    # Generic tree walk for structured payloads
     def walk(node):
         if isinstance(node, list):
             for item in node:
@@ -124,7 +189,6 @@ def extract_messages_from_payload(payload, source_label: str) -> list[dict]:
                 "source": source_label,
             })
 
-        # Recurse into common nested containers
         for key in ("messages", "matches", "results", "items", "data"):
             if key in node:
                 walk(node[key])
@@ -149,11 +213,13 @@ def normalize(raw_dir: Path, min_length: int, max_length: int) -> list[dict]:
     collected = []
 
     for f in files:
+        raw = f.read_text()
         try:
-            payload = json.loads(f.read_text())
-        except json.JSONDecodeError as e:
-            print(f"  Skipping {f.name}: invalid JSON ({e})", file=sys.stderr)
-            continue
+            payload = json.loads(raw)
+        except json.JSONDecodeError:
+            # Fall back to treating the file as a raw text payload — the Slack
+            # MCP markdown blob can be archived this way without re-wrapping.
+            payload = raw
 
         messages = extract_messages_from_payload(payload, source_label=f.stem)
         kept = 0

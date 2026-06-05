@@ -180,6 +180,50 @@ def run_merge_pass(partials: list[str], metadata: dict, model: str) -> str:
     return out
 
 
+def _strip_model_chrome(body: str) -> str:
+    """
+    Models (especially Opus) sometimes wrap the requested profile in a
+    ```markdown ... ``` fence, prefix a conversational preamble ("Here's the
+    complete voice profile."), or append a trailing conversational close
+    ("That's a full profile — want me to save it?"). Strip those so what
+    lands on disk is JUST the profile.
+    """
+    import re as _re
+
+    # Pull content from inside a leading code fence if present
+    fence = _re.search(
+        r"```(?:markdown|md)?\s*\n(?P<inner>.*?)\n```\s*$",
+        body,
+        _re.DOTALL,
+    )
+    if fence:
+        body = fence.group("inner")
+    else:
+        # Drop any stray orphan fence markers on their own line
+        body = "\n".join(
+            line for line in body.splitlines()
+            if line.strip() not in ("```markdown", "```md", "```")
+        )
+
+    # Strip a conversational preamble like "Here's the complete voice profile."
+    body = _re.sub(
+        r"^\s*Here'?s the (?:complete|full)[^\n]*voice profile[^\n]*\n+",
+        "",
+        body,
+        count=1,
+        flags=_re.IGNORECASE,
+    )
+
+    # Strip a trailing conversational close ("That's a full ...", "Let me know ...")
+    body = _re.sub(
+        r"\n+(?:That'?s (?:a |the )?(?:full|complete)|Let me know|Want me to|Would you like)[^\n]*(?:\n[^\n#>•\-*]*)*\s*$",
+        "\n",
+        body,
+    )
+
+    return body.strip() + "\n"
+
+
 def wrap_with_skill_frontmatter(body: str) -> str:
     """Wrap the synthesized profile body in YAML frontmatter so it's a valid skill."""
     frontmatter = textwrap.dedent(f"""\
@@ -195,6 +239,7 @@ def wrap_with_skill_frontmatter(body: str) -> str:
         end = body.find("\n---\n", 4)
         if end != -1:
             body = body[end + 5:].lstrip()
+    body = _strip_model_chrome(body)
     return frontmatter + body
 
 
@@ -258,7 +303,12 @@ def main():
         print("Error: empty final profile", file=sys.stderr)
         sys.exit(1)
 
-    # Ensure header — fall back if the model omitted it
+    # Strip any conversational chrome the model wrapped around the profile
+    # (leading "Here's the profile" preambles, ```markdown fences, trailing
+    # offers to save it). Do this BEFORE the header check so we don't bolt a
+    # second header on top of one the model already produced.
+    body = _strip_model_chrome(body)
+
     if not body.startswith("# "):
         body = (
             f"# Voice Profile\n\n"
