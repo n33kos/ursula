@@ -19,12 +19,11 @@ End-to-end pipeline: collect writing samples from connected services → synthes
 
 > **How far back should I pull writing samples?**
 >
-> 1. **Last 90 days** *(recommended)* — enough volume for a stable profile, recent enough to reflect current voice
+> 1. **Last 90 days** *(recommended)* — broad search window; ample tail to fish from
 > 2. **Last 30 days** — quick snapshot
-> 3. **Last 365 days** — maximum corpus, slower collection
-> 4. **Custom** — you specify in days
+> 3. **Custom** — you specify in days
 
-Resolve the chosen window to an `after:YYYY-MM-DD` Slack search modifier.
+Resolve the chosen window to an `after:YYYY-MM-DD` Slack search modifier. The time window is the *search* bound — the actual collected sample count is gated by the page cap below.
 
 ### Question 2: Model
 
@@ -36,15 +35,15 @@ Resolve the chosen window to an `after:YYYY-MM-DD` Slack search modifier.
 
 Map to `--model {opus|sonnet|haiku}`.
 
-### Question 3: Sample cap
+### Question 3: Thoroughness (page cap)
 
-> **How many Slack messages should I collect at most?**
+> **How thoroughly should I page through Slack results?**
 >
-> 1. **500** *(recommended)* — solid signal, fast synthesis
-> 2. **1500** — deeper analysis, longer synthesis runtime
-> 3. **5000** — maximum corpus
+> 1. **Standard (6 pages, ~120 messages)** *(recommended)* — solid voice signal, modest token cost
+> 2. **Deep (10 pages, ~200 messages)** — richer corpus, noticeably higher token cost
+> 3. **Quick (3 pages, ~60 messages)** — fastest pass; works because voice signal saturates quickly
 
-Use the cap to stop paging through search results once reached.
+Use the chosen page cap as the hard stop in step 2. Pages are 20 messages each. **Architectural note for transparency:** each page response flows through this session's context window before being archived to disk via `Write`, so cost scales linearly with page count. There's no token-free way to pull hundreds of pages under the current MCP-driven design — that's a known limitation, not a bug. A future iteration may add a Slack-Web-API-based collector that bypasses the context window entirely.
 
 ---
 
@@ -71,9 +70,9 @@ from:<USER_ID> after:<YYYY-MM-DD>
 
 For each page of results:
 
-1. Save the **raw JSON response** to `~/.ursula/samples/slack/raw/page-NN.json` (zero-padded page number) using the `Write` tool. Save the entire MCP response payload as-is — the normalizer is tolerant of envelope variations.
+1. Save the **raw response** to `~/.ursula/samples/slack/raw/page-NN.json` (zero-padded page number) using the `Write` tool. The MCP returns a markdown blob under a top-level `results` field; saving the blob text as-is is fine — the normalizer handles both JSON envelopes and bare markdown.
 2. Follow the `next_cursor` / pagination cue in the response and request the next page.
-3. Stop when there are no more results, when you've collected ≥ the sample cap, or after 20 pages (safety cap).
+3. Stop when there are no more results OR when you've written the chosen page-cap number of files (Quick = 3, Standard = 6, Deep = 10). Do **not** exceed the cap — it's the user's stated token-cost ceiling.
 
 If the user has DMs and group DMs that aren't searchable via the public search, that's fine — the walking-skeleton corpus is public + private channel messages.
 
