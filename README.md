@@ -47,6 +47,16 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/set-scope.sh [all|compose|--toggle|--show]
 
 The setting lives at `~/.ursula/config.json` and is read fresh by the `SessionStart` hook on each session, so changes take effect on the next session start.
 
+### Refine the profile in place
+
+```
+/ursula:refine
+```
+
+For small targeted adjustments — adding a guardrail (e.g., "stop using pet names"), removing a misinterpreted descriptor, nuancing a characterization, or filling in a pattern the synthesis missed. The skill reads the current installed profile, classifies your complaint (forbid / remove / modify / add), drafts a surgical edit, shows it for approval, then writes it to both the installed skill and the canonical archival copy. Each accepted refinement is logged at `~/.ursula/refinements.log` for future debugging.
+
+Use `/ursula:refine` for targeted edits; use `/ursula:train` to regenerate the whole profile from fresh samples.
+
 ### How the profile gets loaded
 
 A `SessionStart` hook (`hooks/hooks.json` → `hooks-handlers/session-start.sh`) fires on every Claude Code session start, resume, clear, and compact. It emits a short `additionalContext` nudge pointing Claude at the installed `ursula-voice` skill so the model reads it before composing any prose on your behalf.
@@ -75,6 +85,7 @@ The synthesized profile covers, with linguistics terminology where it adds preci
 - Synthesized profile: `~/.ursula/profile/SKILL.md`
 - Installed skill: `~/.claude/skills/ursula-voice/SKILL.md`
 - Scope config: `~/.ursula/config.json`
+- Refinement log: `~/.ursula/refinements.log`
 
 All of these live outside the plugin install dir so they survive plugin updates. You can hand-edit the installed skill to correct or refine the profile.
 
